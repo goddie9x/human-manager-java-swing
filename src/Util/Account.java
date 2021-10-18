@@ -5,6 +5,7 @@ public class Account {
     private String userName;
     private String accountPassword;
     private String accountName;
+    private String salt;
     private int accountRole;
 
     public Account() {
@@ -14,11 +15,13 @@ public class Account {
     public Account(
             String userName,
             String accountPassword,
+            String salt,
             String accountName,
             int accountRole
     ) {
         this.userName = userName;
         this.accountPassword = accountPassword;
+        this.salt = salt;
         this.accountName = accountName;
         this.accountRole = accountRole;
     }
@@ -35,6 +38,10 @@ public class Account {
         return accountPassword;
     }
 
+    public String getSalt() {
+        return salt;
+    }
+
     public String getAccountName() {
         return accountName;
     }
@@ -49,6 +56,10 @@ public class Account {
 
     public void setPassword(String accountPassword) {
         this.accountPassword = accountPassword;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
     }
 
     public void setAccountName(String accountName) {

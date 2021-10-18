@@ -1,14 +1,15 @@
 package View;
 
+import Util.Message;
+import Util.DefaultEvent;
+import Util.Conversion;
 import java.awt.Color;
-import javax.swing.JOptionPane;
 import javax.swing.border.Border;
 import javax.swing.BorderFactory;
 import Controller.LoginController;
 import java.awt.Color;
 import javax.swing.border.Border;
 import javax.swing.BorderFactory;
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
 
 public class Login extends javax.swing.JFrame {
 
@@ -18,6 +19,10 @@ public class Login extends javax.swing.JFrame {
     public Login(LoginController curentLoginController) {
         initComponents();
         this.curentLoginController = curentLoginController;
+        DefaultEvent.addEventOnclickClearTextField(accountField);
+        DefaultEvent.addEventOnclickClearTextField(passwordField);
+        DefaultEvent.forcusHideComponent(accountField, errorAccountLabel);
+        DefaultEvent.forcusHideComponent(passwordField, errorPasswordLabel);
     }
 
     @SuppressWarnings("unchecked")
@@ -40,6 +45,7 @@ public class Login extends javax.swing.JFrame {
         welcomeLabel.setText("Welcome to Human Manager");
         welcomeLabel.setToolTipText("");
 
+        passwordField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         passwordField.setToolTipText("Enter your password");
         passwordField.setBorder(javax.swing.BorderFactory.createEmptyBorder(5, 5, 5, 5));
         passwordField.setMargin(new java.awt.Insets(0, 10, 0, 0));
@@ -55,6 +61,7 @@ public class Login extends javax.swing.JFrame {
             }
         });
 
+        accountField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         accountField.setText("Account");
         accountField.setToolTipText("Enter your user account");
         accountField.setActionCommand("<Not Set>");
@@ -74,16 +81,12 @@ public class Login extends javax.swing.JFrame {
         labelPassword.setLabelFor(passwordField);
         labelPassword.setText("Enter password");
 
+        loginButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-confirm-35.png"))); // NOI18N
         loginButton.setText("Login");
         loginButton.setNextFocusableComponent(accountField);
         loginButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 loginButtonMouseClicked(evt);
-            }
-        });
-        loginButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                loginButtonActionPerformed(evt);
             }
         });
 
@@ -119,8 +122,8 @@ public class Login extends javax.swing.JFrame {
                         .addGap(84, 84, 84)
                         .addComponent(welcomeLabel))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(190, 190, 190)
-                        .addComponent(loginButton, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(188, 188, 188)
+                        .addComponent(loginButton, javax.swing.GroupLayout.PREFERRED_SIZE, 111, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(73, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -140,9 +143,9 @@ public class Login extends javax.swing.JFrame {
                 .addComponent(passwordField, javax.swing.GroupLayout.PREFERRED_SIZE, 49, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(errorPasswordLabel)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(loginButton, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(22, Short.MAX_VALUE))
+                .addContainerGap(29, Short.MAX_VALUE))
         );
 
         pack();
@@ -154,15 +157,14 @@ public class Login extends javax.swing.JFrame {
 
     private void loginButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_loginButtonMouseClicked
         String accountName = accountField.getText();
-        char[] passwordSpread = passwordField.getPassword();
-        String accountPassword = new String(passwordSpread);
+        String accountPassword = Conversion.passwordToString(passwordField.getPassword());
         boolean accountFieldEmpty = accountName.isEmpty();
         boolean passwordFieldEmpty = accountPassword.isEmpty();
 
         if (accountFieldEmpty || passwordFieldEmpty) {
             Border border = BorderFactory.createLineBorder(Color.RED, 3);
 
-            JOptionPane.showMessageDialog(this, "All field must not empty!", "Fatal error", ERROR_MESSAGE);
+            Message.showError(this, "All field must not empty!");
             if (accountFieldEmpty) {
                 accountField.setBorder(border);
                 errorAccountLabel.setVisible(true);
@@ -179,27 +181,18 @@ public class Login extends javax.swing.JFrame {
             if (isSetedLoginAccount) {
                 this.setVisible(false);
             } else {
-                JOptionPane.showMessageDialog(this, "Account or password is incorrect!", "Login fail", ERROR_MESSAGE);
+                Message.showError(this, "Account or password is incorrect!");
             }
         }
-//        JOptionPane.showConfirmDialog(null, "account is: " + account + " Pass: " + password);
     }//GEN-LAST:event_loginButtonMouseClicked
 
     private void accountFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_accountFieldFocusGained
-        accountField.setText("");
-        errorAccountLabel.setVisible(false);
         accountField.setBorder(null);
     }//GEN-LAST:event_accountFieldFocusGained
 
     private void passwordFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_passwordFieldFocusGained
-        passwordField.setText("");
-        errorPasswordLabel.setVisible(false);
         passwordField.setBorder(null);
     }//GEN-LAST:event_passwordFieldFocusGained
-
-    private void loginButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginButtonActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_loginButtonActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField accountField;

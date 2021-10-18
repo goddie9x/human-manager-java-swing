@@ -1,18 +1,11 @@
 package View;
 
-import Util.Account;
+import Util.Message;
 import Util.Employee;
-import Controller.EmployeeViewController;
 import Controller.ManagerHumanController;
 import java.util.ArrayList;
-import javax.swing.JTable;
-import javax.swing.JButton;
 import javax.swing.table.DefaultTableModel;
-import java.awt.event.MouseEvent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
-import static javax.swing.JOptionPane.WARNING_MESSAGE;
 import javax.swing.table.DefaultTableCellRenderer;
 
 public class ManagerHuman extends javax.swing.JFrame {
@@ -22,10 +15,11 @@ public class ManagerHuman extends javax.swing.JFrame {
     private ManagerHumanController currentManagerHumanController;
     private DefaultTableModel table;
     private final int PERPAGE = 10;
-    private EmployeeViewController nextEmployeeViewController;
     private ArrayList<Employee> employees;
     private boolean isAllSelected = false;
     private DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
+    private int quantityOfEmployees;
+    private String searchText = "";
 
     public ManagerHuman(
             int currentAccountRole,
@@ -37,7 +31,8 @@ public class ManagerHuman extends javax.swing.JFrame {
         table = (DefaultTableModel) HumanTable.getModel();
         this.employees = currentManagerHumanController
                 .loadDataPageEmployees(currentPage);
-
+        quantityOfEmployees
+                = currentManagerHumanController.quantityOfEmployees("");
         renderTable();
 
         if (currentAccountRole == 1) {
@@ -49,35 +44,27 @@ public class ManagerHuman extends javax.swing.JFrame {
     }
 
     public void reloadTable() {
-        int quantityOfEmployees = currentManagerHumanController.quantityOfEmployees();
-        int quantityPage = quantityPageCalculator(quantityOfEmployees);
-        System.out.println(currentPage);
-        System.out.println(quantityPage);
+        quantityOfEmployees
+                = currentManagerHumanController.quantityOfEmployees(searchText);
 
-        if (currentPage > quantityPage) {
-            currentPage = quantityPage;
-        }
-        this.employees
-                = currentManagerHumanController.loadDataPageEmployees(currentPage);
-        renderTable();
-    }
-
-    public void reloadTable(String searchTex) {
-        int quantityOfEmployees = currentManagerHumanController.quantityOfEmployees();
-        int quantityPage = quantityPageCalculator(quantityOfEmployees);
-
-        if (currentPage > quantityPage) {
-            currentPage = quantityPage - 1;
-        }
-        this.employees = currentManagerHumanController.searchEmployeesWithKey(searchTex, currentPage);
+        this.employees = currentManagerHumanController.searchEmployeesWithKey(
+                searchText, currentPage);
         renderTable();
     }
 
     public void renderTable() {
-        int quantityOfEmployees = currentManagerHumanController.quantityOfEmployees();
         int quantityPage = quantityPageCalculator(quantityOfEmployees);
-
         int employeesLength = employees.size();
+        
+        if (currentPage > quantityPage) {
+            currentPage = quantityPage;
+        }
+        
+        if (quantityPage < 1) {
+            disableAllPagination();
+        } else {
+            selectPageField.setVisible(true);
+        }
 
         table.setRowCount(0);
 
@@ -93,21 +80,21 @@ public class ManagerHuman extends javax.swing.JFrame {
         }
         goToPageButton.setVisible(true);
 
-        if (currentPage == 1) {
+        if (currentPage == 1 || quantityPage < 1) {
             backPageButton.setVisible(false);
             firstPageButton.setVisible(false);
         } else {
             backPageButton.setVisible(true);
             firstPageButton.setVisible(true);
         }
-        if (currentPage == quantityPage) {
+        if (currentPage == quantityPage || quantityPage < 1) {
             nextPageButton.setVisible(false);
             endPageButton.setVisible(false);
         } else {
             nextPageButton.setVisible(true);
             endPageButton.setVisible(true);
         }
-        if (quantityPage == 1) {
+        if (quantityPage == 1 || quantityPage < 1) {
             selectPageField.setVisible(false);
             goToPageButton.setVisible(false);
         }
@@ -135,7 +122,7 @@ public class ManagerHuman extends javax.swing.JFrame {
 
         Object[] infoOfEmployee = new Object[]{
             false,
-            index + 1,
+            (currentPage - 1) * PERPAGE + index + 1, //we need current index user in our list
             employee.getAttibuteByStringExceptsalaryLevel("staffCode"),
             employee.getAttibuteByString("fullname"),
             employee.getAttibuteByStringExceptsalaryLevel("positionCode"),
@@ -145,6 +132,10 @@ public class ManagerHuman extends javax.swing.JFrame {
             employee.getsalaryLevel(),};
 
         return infoOfEmployee;
+    }
+
+    private void disableAllPagination() {
+        selectPageField.setVisible(false);
     }
 
     public void selectAllRow() {
@@ -210,8 +201,13 @@ public class ManagerHuman extends javax.swing.JFrame {
         managerAllUserMenuItem = new javax.swing.JMenuItem();
         logoutMenuItem = new javax.swing.JMenuItem();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setTitle("Manager human");
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         HumanTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -258,6 +254,7 @@ public class ManagerHuman extends javax.swing.JFrame {
             HumanTable.getColumnModel().getColumn(8).setMinWidth(50);
         }
 
+        addButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-add-30.png"))); // NOI18N
         addButton.setText("Add");
         addButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -265,6 +262,7 @@ public class ManagerHuman extends javax.swing.JFrame {
             }
         });
 
+        multipleDeleteButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-bin-30.png"))); // NOI18N
         multipleDeleteButton.setText("Multiple delete");
         multipleDeleteButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -284,6 +282,7 @@ public class ManagerHuman extends javax.swing.JFrame {
             }
         });
 
+        searchButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Icon/icons8-search-client-30.png"))); // NOI18N
         searchButton.setText("Search");
         searchButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -340,6 +339,7 @@ public class ManagerHuman extends javax.swing.JFrame {
             }
         });
 
+        buttonSelectAll.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-checked-30.png"))); // NOI18N
         buttonSelectAll.setText("Select all");
         buttonSelectAll.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -348,10 +348,16 @@ public class ManagerHuman extends javax.swing.JFrame {
         });
 
         userManu.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
+        userManu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-confirm-30.png"))); // NOI18N
         userManu.setText("User");
         userManu.setToolTipText("Manager your account");
 
         managerCurrentUserMenuItem.setText("Your account");
+        managerCurrentUserMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                managerCurrentUserMenuItemActionPerformed(evt);
+            }
+        });
         userManu.add(managerCurrentUserMenuItem);
 
         managerAllUserMenuItem.setText("Users manager");
@@ -397,24 +403,24 @@ public class ManagerHuman extends javax.swing.JFrame {
                         .addComponent(nextPageButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(endPageButton)
-                        .addGap(0, 221, Short.MAX_VALUE))
+                        .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(addButton, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(addButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
                         .addComponent(buttonSelectAll)
-                        .addGap(38, 38, 38)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(multipleDeleteButton)
-                        .addGap(108, 108, 108)
+                        .addGap(136, 136, 136)
                         .addComponent(searchField, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(searchButton)
                         .addGap(19, 19, 19)))
                 .addContainerGap())
-            .addGroup(layout.createSequentialGroup()
-                .addGap(219, 219, 219)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
                 .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 309, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(246, 246, 246))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -445,16 +451,14 @@ public class ManagerHuman extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void addButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_addButtonMouseClicked
-        nextEmployeeViewController = new EmployeeViewController(
-                currentAccountRole,
-                currentManagerHumanController
-        );
+        currentManagerHumanController.loadAddNewEmployeeView();
 
         currentManagerHumanController.hideThisHumanManagerView();
     }//GEN-LAST:event_addButtonMouseClicked
 
     private void managerAllUserMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_managerAllUserMenuItemActionPerformed
-        // TODO add your handling code here:
+        currentManagerHumanController.loadManagerUsersViews();
+        currentManagerHumanController.hideThisHumanManagerView();
     }//GEN-LAST:event_managerAllUserMenuItemActionPerformed
 
     private void firstPageButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_firstPageButtonMouseClicked
@@ -473,7 +477,6 @@ public class ManagerHuman extends javax.swing.JFrame {
     }//GEN-LAST:event_backPageButtonMouseClicked
 
     private void nextPageButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_nextPageButtonMouseClicked
-        int quantityOfEmployees = currentManagerHumanController.quantityOfEmployees();
         int quantityPage = quantityPageCalculator(quantityOfEmployees);
 
         currentPage++;
@@ -504,34 +507,28 @@ public class ManagerHuman extends javax.swing.JFrame {
     }//GEN-LAST:event_searchFieldFocusGained
 
     private void searchButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_searchButtonMouseClicked
-        String searchTex = searchField.getText();
-
-        reloadTable(searchTex);
+        currentPage = 1;
+        searchText = searchField.getText();
+        reloadTable();
     }//GEN-LAST:event_searchButtonMouseClicked
 
     private void endPageButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_endPageButtonMouseClicked
-        int quantityPage = currentManagerHumanController.quantityOfEmployees();
-
-        currentPage = quantityPageCalculator(quantityPage);
+        currentPage = quantityPageCalculator(quantityOfEmployees);
         reloadTable();
     }//GEN-LAST:event_endPageButtonMouseClicked
 
     private void goToPageButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_goToPageButtonMouseClicked
         try {
-            int quantityPage = currentManagerHumanController.quantityOfEmployees();
-            int totalPage = quantityPageCalculator(quantityPage);
             int page = Integer.parseInt(selectPageField.getText());
 
             currentPage = page;
-            if (page > totalPage) {
-                JOptionPane.showMessageDialog(
-                        this, "You are enter page more than our total page", "Warning", WARNING_MESSAGE);
-                currentPage = totalPage;
+            if (page > quantityOfEmployees) {
+                Message.showError(this, "You are enter page more than our total page");
+                currentPage = quantityOfEmployees;
             }
             reloadTable();
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(
-                    this, "Please enter a number!", "Fatal error", ERROR_MESSAGE);
+            Message.showError(this, "Please enter a number!");
         }
     }//GEN-LAST:event_goToPageButtonMouseClicked
 
@@ -543,13 +540,11 @@ public class ManagerHuman extends javax.swing.JFrame {
         ArrayList<String> listStaffCodeNeedToDelete = getStaffCodeInRowChecked();
 
         if (listStaffCodeNeedToDelete.size() == 0) {
-            JOptionPane.showMessageDialog(null, "No row has been selected");
+            Message.showError(null, "No row has been selected");
         } else {
-            int userSelected = JOptionPane.showConfirmDialog(null,
-                    "Do you really want to delete those? That action cannot undo",
-                    "Yes",
-                    JOptionPane.YES_NO_OPTION);
-            if (userSelected == 0) {
+            boolean userSelected = Message.showYesNoQuestion(null,
+                    "Do you really want to delete those? That action cannot undo");
+            if (userSelected) {
                 deleteMultipleEmployeesByStaffCode(listStaffCodeNeedToDelete);
                 reloadTable();
             }
@@ -563,11 +558,21 @@ public class ManagerHuman extends javax.swing.JFrame {
             selectAllRow();
         }
     }//GEN-LAST:event_buttonSelectAllMouseClicked
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        boolean userSelected = Message.showYesNoQuestion(null,
+                "Do you wanna close?");
+
+        if (userSelected) {
+            System.exit(0);
+        }
+    }//GEN-LAST:event_formWindowClosing
+
+    private void managerCurrentUserMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_managerCurrentUserMenuItemActionPerformed
+        currentManagerHumanController.loadCurrentAccount();
+    }//GEN-LAST:event_managerCurrentUserMenuItemActionPerformed
     private void viewAnEmployeeButtonMouseClicked(java.awt.event.MouseEvent evt, String staffCode) {
-        nextEmployeeViewController = new EmployeeViewController(
-                currentAccountRole,
-                currentManagerHumanController,
-                staffCode);
+        currentManagerHumanController.loadViewAnEmployee(staffCode);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

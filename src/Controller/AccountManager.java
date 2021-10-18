@@ -10,7 +10,6 @@ public class AccountManager {
     
     public AccountManager(Account currentAccount) {
         this.currentAccount = currentAccount;
-        
         currentAccountManagerView = new AccountManagerView(currentAccount);
     }
     

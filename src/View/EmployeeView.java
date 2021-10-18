@@ -1,15 +1,13 @@
 package View;
 
 import Util.Employee;
+import Util.Message;
+import Util.Conversion;
+import Util.DefaultEvent;
+import Util.Validatetion;
 import Controller.EmployeeViewController;
 import java.awt.Color;
-import java.awt.Component;
 import javax.swing.BorderFactory;
-import javax.swing.ButtonModel;
-import javax.swing.JOptionPane;
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
-import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
-import javax.swing.JTextField;
 import javax.swing.border.Border;
 
 public class EmployeeView extends javax.swing.JFrame {
@@ -22,6 +20,7 @@ public class EmployeeView extends javax.swing.JFrame {
         this.currentEmployeeViewController = currentEmployeeViewController;
         createEmployeeMode();
         hideRedAlertLabel();
+        setAutoHideWarningOnForcusField();
     }
 
     public EmployeeView(
@@ -31,6 +30,15 @@ public class EmployeeView extends javax.swing.JFrame {
         this.currentEmployee = currentEmployee;
         viewEmployeeMode();
         hideRedAlertLabel();
+    }
+
+    private void setAutoHideWarningOnForcusField() {
+        DefaultEvent.forcusHideWarning(staffCodeField, staffCodeWarningLabel);
+        DefaultEvent.forcusHideWarning(phoneNumberField, phoneNumberWarningLabel);
+        DefaultEvent.forcusHideWarning(nationField, nationCodeWarningLabel);
+        DefaultEvent.forcusHideWarning(fullnameField, fullnameCodeWarningLabel);
+        DefaultEvent.forcusHideWarning(dateOfBirthField, dateOfBirthWarningLabel);
+        DefaultEvent.forcusHideWarning(countryField, countryWarningLabel);
     }
 
     private void setDataAllTextField(Employee employee) {
@@ -109,13 +117,11 @@ public class EmployeeView extends javax.swing.JFrame {
             }
         }
 
-        System.err.println(salaryLevelBox.getSelectedIndex() + 1);
-
         Employee newEmployee = new Employee(
                 staffCodeField.getText(),
                 fullnameField.getText(),
                 departmentCodeBox.getSelectedItem().toString(),
-                dateOfBirthField.getText(),
+                Conversion.stringToDateForSql(dateOfBirthField.getText()),
                 countryField.getText(),
                 sex,
                 nationField.getText(),
@@ -175,6 +181,7 @@ public class EmployeeView extends javax.swing.JFrame {
         clearButton.setVisible(true);
         editButton.setVisible(false);
         enableEditableAllTextField();
+        setAutoHideWarningOnForcusField();
     }
 
     private void viewEmployeeMode() {
@@ -210,41 +217,47 @@ public class EmployeeView extends javax.swing.JFrame {
     private boolean validateEmployeeForm() {
         boolean isValidated = true;
 
-        String staffCode = staffCodeField.getText();
-        String fullname = fullnameField.getText();
-        String dateOfBirth = dateOfBirthField.getText();
-        String phoneNumber = phoneNumberField.getText();
-        String nation = nationField.getText();
-        String country = countryField.getText();
-        String departmentCode = departmentCodeBox.getSelectedItem().toString();
-        String positionCode = positionCodeBox.getSelectedItem().toString();
+        String staffCode = staffCodeField.getText().trim();
+        String fullname = fullnameField.getText().trim();
+        String dateOfBirth = dateOfBirthField.getText().trim();
+        String phoneNumber = phoneNumberField.getText().trim();
+        String nation = nationField.getText().trim();
+        String country = countryField.getText().trim();
+        String departmentCode = departmentCodeBox.getSelectedItem().toString().trim();
+        String positionCode = positionCodeBox.getSelectedItem().toString().trim();
         String educationalBackgroundCode
                 = educationalBackgroundCodeBox.getSelectedItem().toString();
         int salaryLevel = salaryLevelBox.getSelectedIndex();
         int sex = sexRadioGroup.getButtonCount();
 
-        if (staffCode.isEmpty()) {
+        if (!Validatetion.checkLengthInRange(staffCode, 5, 30)) {
             staffCodeField.setBorder(border);
+            staffCodeWarningLabel.setVisible(true);
             isValidated = false;
         }
-        if (fullname.isEmpty()) {
+        if (!Validatetion.checkLengthInRange(fullname, 5, 100)) {
             fullnameField.setBorder(border);
+            fullnameCodeWarningLabel.setVisible(true);
             isValidated = false;
         }
-        if (dateOfBirth.isEmpty()) {
+        if (dateOfBirth.isEmpty() || Conversion.stringToDateForSql(dateOfBirth).equals('1')) {
             dateOfBirthField.setBorder(border);
+            dateOfBirthWarningLabel.setVisible(true);
             isValidated = false;
         }
-        if (phoneNumber.isEmpty()) {
+        if (!Validatetion.isPhoneNumber(phoneNumber)) {
             phoneNumberField.setBorder(border);
+            phoneNumberWarningLabel.setVisible(true);
             isValidated = false;
         }
-        if (nation.isEmpty()) {
+        if (!Validatetion.checkLengthInRange(nation, 2, 30)) {
             nationField.setBorder(border);
+            nationCodeWarningLabel.setVisible(true);
             isValidated = false;
         }
-        if (country.isEmpty()) {
+        if (!Validatetion.checkLengthInRange(country, 5, 30)) {
             countryField.setBorder(border);
+            countryWarningLabel.setVisible(true);
             isValidated = false;
         }
         if (departmentCode.isEmpty()) {
@@ -274,15 +287,13 @@ public class EmployeeView extends javax.swing.JFrame {
         if (currentEmployee == null) {
             Employee employee = getDataAllTextField();
             if (addAnEmployee(employee)) {
-                JOptionPane.showMessageDialog(this,
-                        "Add data success", "Successfull", INFORMATION_MESSAGE);
+                Message.showSuccess(this, "Add data success");
             } else {
                 alertWhenGotErrorFromSever();
             }
         } else {
             if (updateCurrentEmoloyee()) {
-                JOptionPane.showMessageDialog(this,
-                        "Save data success", "Successfull", INFORMATION_MESSAGE);
+                Message.showSuccess(this, "Save data success");
             } else {
                 alertWhenGotErrorFromSever();
             }
@@ -295,6 +306,12 @@ public class EmployeeView extends javax.swing.JFrame {
 
     private void hideRedAlertLabel() {
         alertLabel.setVisible(false);
+        staffCodeWarningLabel.setVisible(false);
+        phoneNumberWarningLabel.setVisible(false);
+        nationCodeWarningLabel.setVisible(false);
+        fullnameCodeWarningLabel.setVisible(false);
+        dateOfBirthWarningLabel.setVisible(false);
+        countryWarningLabel.setVisible(false);
     }
 
     private void hideRedAlertBorders() {
@@ -317,8 +334,7 @@ public class EmployeeView extends javax.swing.JFrame {
     }
 
     private void alertWhenGotErrorFromSever() {
-        JOptionPane.showMessageDialog(
-                this, "Some error have been occured, please check your data", "faltal error", ERROR_MESSAGE);
+        Message.showError(this, "Some error have been occured, please check your data");
     }
 
     @SuppressWarnings("unchecked")
@@ -334,7 +350,6 @@ public class EmployeeView extends javax.swing.JFrame {
         fullname = new javax.swing.JLabel();
         fullnameField = new javax.swing.JTextField();
         dateOfBirthLabel = new javax.swing.JLabel();
-        dateOfBirthField = new javax.swing.JTextField();
         countryLabel = new javax.swing.JLabel();
         countryField = new javax.swing.JTextField();
         nationLabel = new javax.swing.JLabel();
@@ -357,6 +372,13 @@ public class EmployeeView extends javax.swing.JFrame {
         positionCodeBox = new javax.swing.JComboBox<>();
         departmentCodeBox = new javax.swing.JComboBox<>();
         alertLabel = new javax.swing.JLabel();
+        dateOfBirthField = new javax.swing.JFormattedTextField();
+        nationCodeWarningLabel = new javax.swing.JLabel();
+        dateOfBirthWarningLabel = new javax.swing.JLabel();
+        phoneNumberWarningLabel = new javax.swing.JLabel();
+        countryWarningLabel = new javax.swing.JLabel();
+        fullnameCodeWarningLabel = new javax.swing.JLabel();
+        staffCodeWarningLabel = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Staff info");
@@ -369,43 +391,47 @@ public class EmployeeView extends javax.swing.JFrame {
         staffCodeLabel.setLabelFor(staffCodeField);
         staffCodeLabel.setText("Staff code");
 
+        staffCodeField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         staffCodeField.setToolTipText("Staff code");
 
         stafInforLabel.setFont(new java.awt.Font("Tahoma", 0, 24)); // NOI18N
+        stafInforLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-confirm-35.png"))); // NOI18N
         stafInforLabel.setText("Staff info");
 
-        departmentCodeLabel.setLabelFor(staffCodeField);
+        departmentCodeLabel.setLabelFor(departmentCodeBox);
         departmentCodeLabel.setText("Department code");
 
-        positionCodeLabel.setLabelFor(staffCodeField);
+        positionCodeLabel.setLabelFor(positionCodeBox);
         positionCodeLabel.setText("Position code");
 
-        fullname.setLabelFor(staffCodeField);
+        fullname.setLabelFor(fullnameField);
         fullname.setText("Full name");
 
+        fullnameField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fullnameField.setToolTipText("Full name");
 
-        dateOfBirthLabel.setLabelFor(staffCodeField);
+        dateOfBirthLabel.setLabelFor(dateOfBirthField);
         dateOfBirthLabel.setText("Date of birth");
 
-        dateOfBirthField.setToolTipText("Date of birth");
-
-        countryLabel.setLabelFor(staffCodeField);
+        countryLabel.setLabelFor(countryField);
         countryLabel.setText("Country");
 
+        countryField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         countryField.setToolTipText("Country");
 
-        nationLabel.setLabelFor(staffCodeField);
+        nationLabel.setLabelFor(nationField);
         nationLabel.setText("Nation");
 
+        nationField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         nationField.setToolTipText("Nation");
 
-        salaryLevelLabel.setLabelFor(staffCodeField);
+        salaryLevelLabel.setLabelFor(salaryLevelBox);
         salaryLevelLabel.setText("Salary level:");
 
-        educationalBackgroundCodeLabel.setLabelFor(staffCodeField);
+        educationalBackgroundCodeLabel.setLabelFor(educationalBackgroundCodeBox);
         educationalBackgroundCodeLabel.setText("Educational background code");
 
+        confirmButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-verified-account-30.png"))); // NOI18N
         confirmButton.setText("Confirm");
         confirmButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -413,6 +439,7 @@ public class EmployeeView extends javax.swing.JFrame {
             }
         });
 
+        cancelButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Icon/icons8-delete-30.png"))); // NOI18N
         cancelButton.setText("Cancel");
         cancelButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -420,12 +447,13 @@ public class EmployeeView extends javax.swing.JFrame {
             }
         });
 
-        phoneNumberLabel.setLabelFor(staffCodeField);
+        phoneNumberLabel.setLabelFor(phoneNumberField);
         phoneNumberLabel.setText("PhoneNumber");
 
+        phoneNumberField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         phoneNumberField.setToolTipText("PhoneNumber");
 
-        sexLabel.setLabelFor(staffCodeField);
+        sexLabel.setLabelFor(maleRadio);
         sexLabel.setText("Sex");
         sexLabel.setToolTipText("Select gender");
         sexLabel.setAutoscrolls(true);
@@ -439,6 +467,7 @@ public class EmployeeView extends javax.swing.JFrame {
         sexRadioGroup.add(otherSexRadio);
         otherSexRadio.setText("Other");
 
+        deteteButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Icon/icons8-bin-30.png"))); // NOI18N
         deteteButton.setText("Delete");
         deteteButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -446,6 +475,7 @@ public class EmployeeView extends javax.swing.JFrame {
             }
         });
 
+        editButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/medias/Icon/icons8-edit-30.png"))); // NOI18N
         editButton.setText("Edit");
         editButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -453,6 +483,7 @@ public class EmployeeView extends javax.swing.JFrame {
             }
         });
 
+        clearButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Icon/icons8-eraser-30.png"))); // NOI18N
         clearButton.setText("Clear");
         clearButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -475,6 +506,34 @@ public class EmployeeView extends javax.swing.JFrame {
         alertLabel.setForeground(new java.awt.Color(255, 0, 0));
         alertLabel.setText("Every box has red alert need to be fill");
 
+        dateOfBirthField.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.DateFormatter(new java.text.SimpleDateFormat("dd/MM/yyyy"))));
+        dateOfBirthField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        dateOfBirthField.setToolTipText("Enter your date of birth");
+
+        nationCodeWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        nationCodeWarningLabel.setLabelFor(nationField);
+        nationCodeWarningLabel.setText("Please enter at least 2 characters");
+
+        dateOfBirthWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        dateOfBirthWarningLabel.setLabelFor(dateOfBirthField);
+        dateOfBirthWarningLabel.setText("Please enter date format");
+
+        phoneNumberWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        phoneNumberWarningLabel.setLabelFor(phoneNumberField);
+        phoneNumberWarningLabel.setText("Please enter phone number");
+
+        countryWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        countryWarningLabel.setLabelFor(countryField);
+        countryWarningLabel.setText("Please enter at least 5 characters");
+
+        fullnameCodeWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        fullnameCodeWarningLabel.setLabelFor(fullnameField);
+        fullnameCodeWarningLabel.setText("Please enter at least 5 characters");
+
+        staffCodeWarningLabel.setForeground(new java.awt.Color(255, 0, 0));
+        staffCodeWarningLabel.setLabelFor(staffCodeField);
+        staffCodeWarningLabel.setText("Please enter at least 5 characters");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -483,47 +542,56 @@ public class EmployeeView extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(nationField)
-                                    .addComponent(nationLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(18, 18, 18)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(countryField)
-                                    .addComponent(countryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(staffCodeLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(dateOfBirthField, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(dateOfBirthLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(18, 18, 18)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(phoneNumberField, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(phoneNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(staffCodeField, javax.swing.GroupLayout.DEFAULT_SIZE, 181, Short.MAX_VALUE)
-                                    .addComponent(staffCodeLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                .addGap(18, 18, 18)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(nationLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addGap(41, 41, 41))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(staffCodeWarningLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(dateOfBirthField, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(nationField, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addGap(38, 38, 38)))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(countryField, javax.swing.GroupLayout.DEFAULT_SIZE, 181, Short.MAX_VALUE)
+                                    .addComponent(countryLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 181, Short.MAX_VALUE)
+                                    .addComponent(fullname, javax.swing.GroupLayout.DEFAULT_SIZE, 181, Short.MAX_VALUE)
+                                    .addComponent(fullnameCodeWarningLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 181, Short.MAX_VALUE)
                                     .addComponent(fullnameField)
-                                    .addComponent(fullname, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addComponent(alertLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(stafInforLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 155, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(53, 53, 53)
+                                    .addComponent(phoneNumberField)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(dateOfBirthLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(phoneNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(staffCodeField, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(nationCodeWarningLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(41, 41, 41))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(dateOfBirthWarningLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addGap(38, 38, 38)))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(countryWarningLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 173, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(phoneNumberWarningLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 178, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 58, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(salaryLevelLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 108, Short.MAX_VALUE)
+                                .addComponent(salaryLevelLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGap(77, 77, 77)
                                 .addComponent(salaryLevelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(educationalBackgroundCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(positionCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(educationalBackgroundCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(positionCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, 57, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(departmentCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(departmentCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(educationalBackgroundCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 57, Short.MAX_VALUE)
+                                .addComponent(educationalBackgroundCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, 57, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(sexLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -532,22 +600,31 @@ public class EmployeeView extends javax.swing.JFrame {
                                     .addComponent(otherSexRadio))
                                 .addGap(0, 0, Short.MAX_VALUE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(positionCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(departmentCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(positionCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addComponent(departmentCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, 57, javax.swing.GroupLayout.PREFERRED_SIZE))))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(89, 89, 89)
-                        .addComponent(confirmButton)
-                        .addGap(40, 40, 40)
-                        .addComponent(editButton)
-                        .addGap(49, 49, 49)
-                        .addComponent(clearButton)
-                        .addGap(45, 45, 45)
-                        .addComponent(deteteButton)
-                        .addGap(46, 46, 46)
-                        .addComponent(cancelButton)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(162, 162, 162)
+                                .addComponent(stafInforLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 155, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(113, 113, 113)
+                                .addComponent(confirmButton)
+                                .addGap(18, 18, 18)
+                                .addComponent(editButton, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(clearButton, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(deteteButton)
+                                .addGap(18, 18, 18)
+                                .addComponent(cancelButton)))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
+            .addGroup(layout.createSequentialGroup()
+                .addGap(147, 147, 147)
+                .addComponent(alertLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -556,54 +633,19 @@ public class EmployeeView extends javax.swing.JFrame {
                 .addGap(2, 2, 2)
                 .addComponent(alertLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(staffCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(staffCodeField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(fullname, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(fullnameField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(countryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(countryField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addComponent(nationLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(nationField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(phoneNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addGap(3, 3, 3)
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                            .addComponent(educationalBackgroundCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(educationalBackgroundCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(phoneNumberField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(departmentCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(departmentCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(dateOfBirthLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(dateOfBirthField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(sexLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(sexLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(fullname, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(maleRadio)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(femaleRadio)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(otherSexRadio)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(otherSexRadio)
+                            .addComponent(fullnameCodeWarningLabel))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(salaryLevelLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -612,15 +654,61 @@ public class EmployeeView extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(positionCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(positionCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(81, 81, 81)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
+                        .addGap(18, 18, 18)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(educationalBackgroundCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(educationalBackgroundCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(departmentCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(departmentCodeBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(31, 31, 31)
+                                .addComponent(fullnameField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(staffCodeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(staffCodeField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(staffCodeWarningLabel)
+                        .addGap(24, 24, 24)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(countryLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(countryField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                        .addComponent(nationLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(nationField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addGap(2, 2, 2)
+                                .addComponent(nationCodeWarningLabel))
+                            .addComponent(countryWarningLabel))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(dateOfBirthLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(phoneNumberLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(dateOfBirthField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(phoneNumberField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(6, 6, 6)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(dateOfBirthWarningLabel)
+                            .addComponent(phoneNumberWarningLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(confirmButton)
                     .addComponent(cancelButton)
                     .addComponent(editButton)
                     .addComponent(clearButton)
                     .addComponent(deteteButton))
-                .addGap(53, 53, 53))
+                .addGap(21, 21, 21))
         );
 
         pack();
@@ -642,22 +730,18 @@ public class EmployeeView extends javax.swing.JFrame {
         if (validateEmployeeForm()) {
             handleConfirmOnclick();
         } else {
-            JOptionPane.showMessageDialog(this,
-                    "Delete", "Successfull", ERROR_MESSAGE);
+            Message.showError(this, "All field need to be fill");
         }
     }//GEN-LAST:event_confirmButtonMouseClicked
 
     private void deteteButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_deteteButtonMouseClicked
-        int userSelected = JOptionPane.showConfirmDialog(null,
-                "Do you really want to delete this? That action cannot undo",
-                "Yes",
-                JOptionPane.YES_NO_OPTION);
-        if (userSelected == 0) {
+        boolean userSelected = Message.showYesNoQuestion(null,
+                "Do you really want to delete this? That action cannot undo");
+        if (userSelected) {
             boolean isDeleted = currentEmployeeViewController.deleteEmployeeByStaffCode(
                     currentEmployee.getAttibuteByStringExceptsalaryLevel("staffCode"));
             if (isDeleted) {
-                JOptionPane.showMessageDialog(
-                        this, "Delete success", "SUCCESS", INFORMATION_MESSAGE);
+                Message.showSuccess(this, "Delete success");
 
                 currentEmployeeViewController.showManagerHumanView();
             } else {
@@ -667,7 +751,7 @@ public class EmployeeView extends javax.swing.JFrame {
     }//GEN-LAST:event_deteteButtonMouseClicked
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-       currentEmployeeViewController.showManagerHumanView();
+        currentEmployeeViewController.showManagerHumanView();
     }//GEN-LAST:event_formWindowClosing
 
 
@@ -678,8 +762,10 @@ public class EmployeeView extends javax.swing.JFrame {
     private javax.swing.JButton confirmButton;
     private javax.swing.JTextField countryField;
     private javax.swing.JLabel countryLabel;
-    private javax.swing.JTextField dateOfBirthField;
+    private javax.swing.JLabel countryWarningLabel;
+    private javax.swing.JFormattedTextField dateOfBirthField;
     private javax.swing.JLabel dateOfBirthLabel;
+    private javax.swing.JLabel dateOfBirthWarningLabel;
     private javax.swing.JComboBox<String> departmentCodeBox;
     private javax.swing.JLabel departmentCodeLabel;
     private javax.swing.JButton deteteButton;
@@ -688,13 +774,16 @@ public class EmployeeView extends javax.swing.JFrame {
     private javax.swing.JLabel educationalBackgroundCodeLabel;
     private javax.swing.JRadioButton femaleRadio;
     private javax.swing.JLabel fullname;
+    private javax.swing.JLabel fullnameCodeWarningLabel;
     private javax.swing.JTextField fullnameField;
     private javax.swing.JRadioButton maleRadio;
+    private javax.swing.JLabel nationCodeWarningLabel;
     private javax.swing.JTextField nationField;
     private javax.swing.JLabel nationLabel;
     private javax.swing.JRadioButton otherSexRadio;
     private javax.swing.JTextField phoneNumberField;
     private javax.swing.JLabel phoneNumberLabel;
+    private javax.swing.JLabel phoneNumberWarningLabel;
     private javax.swing.JComboBox<String> positionCodeBox;
     private javax.swing.JLabel positionCodeLabel;
     private javax.swing.JComboBox<String> salaryLevelBox;
@@ -704,5 +793,6 @@ public class EmployeeView extends javax.swing.JFrame {
     private javax.swing.JLabel stafInforLabel;
     private javax.swing.JTextField staffCodeField;
     private javax.swing.JLabel staffCodeLabel;
+    private javax.swing.JLabel staffCodeWarningLabel;
     // End of variables declaration//GEN-END:variables
 }

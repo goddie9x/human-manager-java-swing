@@ -60,7 +60,6 @@ public class Employee extends Staff {
 
         switch (atribute) {
             case "staffCode":
-                System.out.print(atribute);
                 this.staffCode = value;
                 break;
             case "departmentCode":

@@ -8,6 +8,7 @@ import Util.Account;
 public class LoginController {
     private Login loginFrame;
     private Account currentAccount;
+    private final  AccountModel accountModel = new AccountModel();
 
     public void loadViewLogin() {
         loginFrame = new Login(this);
@@ -16,7 +17,6 @@ public class LoginController {
     }
 
     public boolean setUser(String accountName, String accountPassword) {
-        AccountModel accountModel = new AccountModel();
         currentAccount = accountModel.getAccountInfo(accountName, accountPassword);
 
         if (currentAccount.getAccountRole() > 0) {

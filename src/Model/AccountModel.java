@@ -1,6 +1,7 @@
 package Model;
 
 import Config.ConnectDbSql;
+import Util.PassEncHashSalt;
 import Util.Account;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,34 +16,28 @@ public class AccountModel {
     private final int PERPAGE = 10;
 
     public Account getAccountInfo(String accountName, String accountPassword) {
-
-        String queryThatAccount = "select top 1 * from Accounts as Acc "
-                + "where Acc.accountName = ? AND "
-                + "Acc.accountPassword = ?";
-
-        try {
-            PreparedStatement queryThatAccountStatement
-                    = DB.prepareStatement(queryThatAccount);
-
-            queryThatAccountStatement.setString(1, accountName);
-            queryThatAccountStatement.setString(2, accountPassword);
-
-            ResultSet accountResult
-                    = queryThatAccountStatement.executeQuery();
-
-            accountResult.next();
-            Account account = new Account(
-                    accountResult.getString("userName"),
-                    accountResult.getString("accountPassword"),
-                    accountResult.getString("accountName"),
-                    accountResult.getInt("accountRole")
-            );
-
-            return account;
-        } catch (SQLException e) {
+        Account thatAccount = getAnAccountByAccountName(accountName);
+        if (thatAccount == null) {
+            return new Account();
         }
 
+        String salt = thatAccount.getSalt().trim();
+        String thatPassword = thatAccount.getPassword().trim();
+        boolean isComparePassWord = PassEncHashSalt.verifyUserPassword(
+                accountPassword, thatPassword, salt);
+
+        if (isComparePassWord) {
+            return thatAccount;
+        }
         return new Account();
+    }
+
+    public ArrayList<Account> getAllAccountsInfoFromPageExceptCurrentAdminAccount(
+            int page, String currentAdminAccountName) {
+        ArrayList<Account> accounts = getAccountsWithConditonInPage(
+                "*", " accountName <> '" + currentAdminAccountName + "'", 1);
+
+        return accounts;
     }
 
     public ArrayList<Account> getAllAccountsInfoFromPage(int page) {
@@ -72,9 +67,10 @@ public class AccountModel {
 
             while (resultSet.next()) {
                 Account currentAccount = new Account(
-                        resultSet.getString("userName"),
-                        resultSet.getString("accountPassword"),
-                        resultSet.getString("accountName"),
+                        resultSet.getString("userName").trim(),
+                        resultSet.getString("accountPassword").trim(),
+                        "",
+                        resultSet.getString("accountName").trim(),
                         resultSet.getInt("accountRole")
                 );
                 accounts.add(currentAccount);
@@ -87,14 +83,21 @@ public class AccountModel {
         return accounts;
     }
 
-    public int getAmountAccounts() {
+    public int getAmountAccountsWithCondition(String condition,
+            String currentAdminAccountName) {
         int quantityOfAccounts = 0;
-        String countAccountsQuery = "SELECT COUNT(*) FROM Accounts";
+        String countAccountsQuery = "SELECT COUNT(*) FROM Accounts where"
+                + "(userName = ? or accountName = ?) and "
+                + " accountName <> '" + currentAdminAccountName + "'";
 
         try {
-            Statement statementQueryAllAccounts = DB.createStatement();
+            PreparedStatement statementQueryAllAccounts = DB.prepareStatement(
+                    countAccountsQuery);
+            statementQueryAllAccounts.setString(1, condition);
+            statementQueryAllAccounts.setString(2, condition);
+
             ResultSet resultSet
-                    = statementQueryAllAccounts.executeQuery(countAccountsQuery);
+                    = statementQueryAllAccounts.executeQuery();
             resultSet.next();
 
             return resultSet.getInt(1);
@@ -106,15 +109,43 @@ public class AccountModel {
         return quantityOfAccounts;
     }
 
-    public ArrayList<Account> getAccountsWithKey(String key,
-            int page) {
+    public int getAmountAccountsWithCondition(
+            String currentAdminAccountName) {
+        int quantityOfAccounts = 0;
+        String countAccountsQuery = "SELECT COUNT(*) FROM Accounts where"
+                + " accountName <> ?";
+
+        try {
+            PreparedStatement statementQueryAllAccounts = DB.prepareStatement(
+                    countAccountsQuery);
+            statementQueryAllAccounts.setString(1, currentAdminAccountName);
+
+            ResultSet resultSet
+                    = statementQueryAllAccounts.executeQuery();
+            resultSet.next();
+
+            return resultSet.getInt(1);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return quantityOfAccounts;
+    }
+
+    public ArrayList<Account> getAccountsWithKeyExceptCurrentAdminAccount(String key,
+            int page, String currentAdminAccountName) {
+        if(page < 1){
+            page = 1;
+        }
+        
         int postitionStartSelectAccount = (page - 1) * PERPAGE;
         ArrayList<Account> Accounts = new ArrayList<>();
 
         String queyAllAccountsWithKey = "SELECT * FROM Accounts "
-                + "WHERE AccountCode = ? or fullname = ? or country = ?"
-                + " or phoneNumber = ?"
-                + " ORDER BY AccountCode "
+                + "WHERE (userName = ? or accountName = ?) and "
+                + " accountName <> '" + currentAdminAccountName
+                + "' ORDER BY accountName "
                 + "OFFSET " + postitionStartSelectAccount + " ROWS "
                 + "FETCH NEXT " + PERPAGE + " ROWS ONLY";
 
@@ -124,17 +155,16 @@ public class AccountModel {
 
             queryThatAccountStatement.setString(1, key);
             queryThatAccountStatement.setString(2, key);
-            queryThatAccountStatement.setString(3, key);
-            queryThatAccountStatement.setString(4, key);
 
             ResultSet resultSet
                     = queryThatAccountStatement.executeQuery();
 
             while (resultSet.next()) {
                 Account currentAccount = new Account(
-                        resultSet.getString("userName"),
-                        resultSet.getString("accountPassword"),
-                        resultSet.getString("accountName"),
+                        resultSet.getString("userName").trim(),
+                        resultSet.getString("accountPassword").trim(),
+                        "",
+                        resultSet.getString("accountName").trim(),
                         resultSet.getInt("accountRole")
                 );
 
@@ -148,20 +178,89 @@ public class AccountModel {
         return Accounts;
     }
 
+    public ArrayList<Account> getAccountsWithKey(String key,
+            int page) {
+        int postitionStartSelectAccount = (page - 1) * PERPAGE;
+        ArrayList<Account> Accounts = new ArrayList<>();
+
+        String queyAllAccountsWithKey = "SELECT * FROM Accounts "
+                + "WHERE userName = ? or accountName = ?"
+                + " ORDER BY accountName "
+                + "OFFSET " + postitionStartSelectAccount + " ROWS "
+                + "FETCH NEXT " + PERPAGE + " ROWS ONLY";
+
+        try {
+            PreparedStatement queryThatAccountStatement
+                    = DB.prepareStatement(queyAllAccountsWithKey);
+
+            queryThatAccountStatement.setString(1, key);
+            queryThatAccountStatement.setString(2, key);
+
+            ResultSet resultSet
+                    = queryThatAccountStatement.executeQuery();
+
+            while (resultSet.next()) {
+                Account currentAccount = new Account(
+                        resultSet.getString("userName").trim(),
+                        resultSet.getString("accountPassword").trim(),
+                        "",
+                        resultSet.getString("accountName").trim(),
+                        resultSet.getInt("accountRole")
+                );
+
+                Accounts.add(currentAccount);
+            }
+            return Accounts;
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+
+        return Accounts;
+    }
+
+    public Account getAnAccountByAccountName(String accountName) {
+        String queryThatAccount = "select top 1 * from Accounts "
+                + "where accountName = '" + accountName + "'";
+
+        try {
+            Statement queryThatAccountStatement = DB.createStatement();
+            ResultSet employeeResult
+                    = queryThatAccountStatement.executeQuery(queryThatAccount);
+            employeeResult.next();
+
+            Account thatAccount = new Account(
+                    employeeResult.getString("userName").trim(),
+                    employeeResult.getString("accountPassword").trim(),
+                    employeeResult.getString("salt"),
+                    employeeResult.getString("accountName").trim(),
+                    employeeResult.getInt("accountRole")
+            );
+            return thatAccount;
+        } catch (SQLException exception) {
+            return null;
+        }
+    }
+
     public boolean updateAnAccount(
             Account newAccountResult) {
         String userName = newAccountResult.getUserName();
         boolean result = false;
+        String saltvalue = PassEncHashSalt.getSaltvalue(30);
+        String encryptedpassword
+                = PassEncHashSalt.generateSecurePassword(
+                        newAccountResult.getPassword(), saltvalue);
 
         String updateEmeployeeStatement = "UPDATE Accounts "
                 + "Set "
                 + "accountName = N'"
                 + newAccountResult.getAccountName()
                 + "'," + "accountPassword = '"
-                + newAccountResult.getPassword()
+                + encryptedpassword
+                + "'," + "salt = '"
+                + saltvalue
                 + "'," + "accountRole = '"
                 + newAccountResult.getAccountRole()
-                + "' WHERE AccountCode = " + "'" + userName + "'";
+                + "' WHERE accountName = " + "'" + userName + "'";
         try {
             Statement deleteAccount = DB.createStatement();
             deleteAccount.executeUpdate(updateEmeployeeStatement);
@@ -174,17 +273,22 @@ public class AccountModel {
 
     public boolean addAnAccount(Account newAccountResult) {
         boolean result = false;
+        String saltvalue = PassEncHashSalt.getSaltvalue(30);
+        String encryptedpassword
+                = PassEncHashSalt.generateSecurePassword(
+                        newAccountResult.getPassword(), saltvalue);
+
         String insertEmeployeeStatement = "INSERT INTO Accounts "
                 + "VALUES("
-                + "'" + newAccountResult.getUserName() + ","
+                + "N'" + newAccountResult.getUserName() + "','"
                 + newAccountResult.getAccountName() + "','"
-                + newAccountResult.getPassword() + "','"
+                + encryptedpassword + "','"
+                + saltvalue + "',"
                 + newAccountResult.getAccountRole()
                 + ");";
-        System.out.print(insertEmeployeeStatement);
         try {
-            Statement deleteAccount = DB.createStatement();
-            deleteAccount.executeUpdate(insertEmeployeeStatement);
+            Statement insertAccount = DB.createStatement();
+            insertAccount.executeUpdate(insertEmeployeeStatement);
             result = true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -192,13 +296,15 @@ public class AccountModel {
         return result;
     }
 
-    public int[] deleteMultipleAccountsByAccountCode(String[] AccountCodes) {
-        int AccountCodesLength = AccountCodes.length;
-        //some time we need to checkout what employee has been deleted or not
-        int[] statusDeleteMultipleAccount = new int[AccountCodesLength];
+    public int[] deleteMultipleAccountsByAccountName(ArrayList<String> AccountNames) {
+        int AccountNamesLength = AccountNames.size();
 
-        for (int i = 0; i < AccountCodesLength; i++) {
-            if (deleteAnAccountByAccountCode(AccountCodes[i])) {
+        int[] statusDeleteMultipleAccount = new int[AccountNamesLength];
+
+        for (int i = 0; i < AccountNamesLength; i++) {
+            String currentAccountName = AccountNames.get(i);
+
+            if (deleteAnAccountByAccountName(currentAccountName)) {
                 statusDeleteMultipleAccount[i] = 1;
             } else {
                 statusDeleteMultipleAccount[i] = 0;
@@ -208,12 +314,10 @@ public class AccountModel {
         return statusDeleteMultipleAccount;
     }
 
-    public boolean deleteAnAccountByAccountCode(String AccountCode) {
+    public boolean deleteAnAccountByAccountName(String accountName) {
         boolean result = false;
-        String deleteAccountStatement = "DELETE FROM contractLabors WHERE "
-                + "AccountCode = " + "'" + AccountCode + "';"
-                + "DELETE FROM Accounts WHERE "
-                + "AccountCode = " + "'" + AccountCode + "';";
+        String deleteAccountStatement = "DELETE FROM Accounts WHERE "
+                + "accountName = " + "'" + accountName + "';";
 
         try {
             Statement deleteAccount = DB.createStatement();

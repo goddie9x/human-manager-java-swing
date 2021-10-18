@@ -45,7 +45,7 @@ public class EmployeeModel {
     }
 
     public ArrayList<Employee> getEmployeesOnPage(int page) {
-        ArrayList<Employee> Employees = getEmployeesWithConditonInPage("*",
+        ArrayList<Employee> Employees = getEmployeesWithConditonInPage(
                 "1=1",
                 page);
 
@@ -62,6 +62,34 @@ public class EmployeeModel {
                     = statementQueryAllEmployees.executeQuery(countEmployeesQuery);
             resultSet.next();
 
+            quantityOfEmployees = resultSet.getInt(1);
+            return quantityOfEmployees;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return quantityOfEmployees;
+    }
+
+    public int countEmployeesWithKey(String key) {
+        int quantityOfEmployees = 0;
+        String countEmployeesQuery = "SELECT COUNT(*) FROM Employees"
+                + " WHERE EmployeeCode = ? or fullname = ? or country = ?"
+                + " or phoneNumber = ?";
+
+        try {
+            PreparedStatement statementQueryAllEmployees = DB.prepareStatement(
+                    countEmployeesQuery);
+            statementQueryAllEmployees.setString(1, key);
+            statementQueryAllEmployees.setString(2, key);
+            statementQueryAllEmployees.setString(3, key);
+            statementQueryAllEmployees.setString(4, key);
+
+            ResultSet resultSet
+                    = statementQueryAllEmployees.executeQuery();
+            resultSet.next();
+
             return resultSet.getInt(1);
 
         } catch (SQLException e) {
@@ -71,9 +99,12 @@ public class EmployeeModel {
         return quantityOfEmployees;
     }
 
-    public ArrayList<Employee> getEmployeesWithConditonInPage(String column,
+    public ArrayList<Employee> getEmployeesWithConditonInPage(
             String condition,
             int page) {
+        if (page < 1) {
+            page = 1;
+        }
 
         int postitionStartSelectEmployee = (page - 1) * PERPAGE;
         ArrayList<Employee> Employees = new ArrayList<>();
@@ -114,6 +145,10 @@ public class EmployeeModel {
 
     public ArrayList<Employee> getEmployeesWithKey(String key,
             int page) {
+        if (page < 1) {
+            page = 1;
+        }
+
         int postitionStartSelectEmployee = (page - 1) * PERPAGE;
         ArrayList<Employee> Employees = new ArrayList<>();
 
@@ -132,7 +167,6 @@ public class EmployeeModel {
             queryThatEmployeeStatement.setString(2, key);
             queryThatEmployeeStatement.setString(3, key);
             queryThatEmployeeStatement.setString(4, key);
-            
 
             ResultSet resultSet
                     = queryThatEmployeeStatement.executeQuery();
@@ -217,8 +251,8 @@ public class EmployeeModel {
                 + newEmployeeResult.getsalaryLevel()
                 + ");";
         try {
-            Statement deleteEmployee = DB.createStatement();
-            deleteEmployee.executeUpdate(insertEmeployeeStatement);
+            Statement addEmployee = DB.createStatement();
+            addEmployee.executeUpdate(insertEmeployeeStatement);
             result = true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -233,7 +267,7 @@ public class EmployeeModel {
 
         for (int i = 0; i < EmployeeCodesLength; i++) {
             String currentEmployeeCode = EmployeeCodes.get(i);
-            
+
             if (deleteAnEmployeeByEmployeeCode(currentEmployeeCode)) {
                 statusDeleteMultipleEmployee[i] = 1;
             } else {

@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import Model.EmployeeModel;
 import Controller.EmployeeViewController;
 import Controller.LoginController;
+import Controller.ManagerUsersController;
+import Controller.AccountViewController;
 import Util.Employee;
 
 public class ManagerHumanController {
@@ -15,6 +17,8 @@ public class ManagerHumanController {
     private EmployeeViewController employeeViewController;
     private Account currentAccount;
     private LoginController currentLoginController;
+    private ManagerUsersController nextManagerUsersController;
+    private AccountViewController nextAccountViewController;
 
     ManagerHumanController(Account currentAccount, LoginController currentLoginController) {
         this.currentAccount = currentAccount;
@@ -29,6 +33,20 @@ public class ManagerHumanController {
         managerHumanFrame.setVisible(true);
     }
 
+    public void loadAddNewEmployeeView() {
+        employeeViewController = new EmployeeViewController(
+                currentAccount.getAccountRole(),
+                this
+        );
+    }
+
+    public void loadViewAnEmployee(String staffCode) {
+        employeeViewController = new EmployeeViewController(
+                currentAccount.getAccountRole(),
+                this,
+                staffCode);
+    }
+
     public ArrayList<Employee> loadDataPageEmployees(int page) {
         ArrayList<Employee> listEmployees = employeeModel.getEmployeesOnPage(page);
 
@@ -39,13 +57,23 @@ public class ManagerHumanController {
         return employeeModel.deleteMultipleEmployeesByEmployeeCode(EmployeeCodes);
     }
 
+    public boolean checkPasswordCompareCurrentAccountPassword(String password) {
+        return password.equals(currentAccount.getPassword());
+    }
+
     public Employee getEmployeeByStaffCode(String staffCode) {
         Employee employee = employeeModel.getAnEmployeeByEmployeeCode(staffCode);
         return employee;
     }
 
-    public int quantityOfEmployees() {
-        return employeeModel.countEmployees();
+    public int quantityOfEmployees(String searchTex) {
+        if (searchTex.isEmpty()) {
+            return employeeModel.countEmployees();
+        }
+        else{
+            return employeeModel.countEmployeesWithKey(searchTex);
+        }
+
     }
 
     public void loadEmployeeViewByStaffCode(String staffCode) {
@@ -68,15 +96,32 @@ public class ManagerHumanController {
         return employees;
     }
 
-    public void logout() {
-        managerHumanFrame.dispose();
+    public void loadCurrentAccount() {
+        nextAccountViewController = new AccountViewController(
+                this, currentAccount, currentAccount.getAccountName());
+        this.hideThisHumanManagerView();
+    }
 
+    public void loadManagerUsersViews() {
+        nextManagerUsersController = new ManagerUsersController(this, currentAccount);
+
+        nextManagerUsersController.getAccountByAccountName(
+                currentAccount.getAccountName());
+        hideThisHumanManagerView();
+    }
+
+    public void logout() {
+        disposeThisHumanManagerView();
         currentLoginController.logout();
+    }
+
+    public void disposeThisHumanManagerView() {
+        managerHumanFrame.dispose();
     }
 
     public void showThisHumanManagerView() {
         managerHumanFrame.setVisible(true);
-        managerHumanFrame.renderTable();
+        managerHumanFrame.reloadTable();
     }
 
     public void hideThisHumanManagerView() {
