@@ -33,6 +33,8 @@ public class ManagerUsers extends javax.swing.JFrame {
         table = (DefaultTableModel) UserTable.getModel();
         this.accounts = currentManagerUsersController
                 .loadDataPageAccounts(currentPage);
+        quantityOfAccounts = 
+                currentManagerUsersController.quantityOfAccounts("");
 
         renderTable();
     }
@@ -41,16 +43,18 @@ public class ManagerUsers extends javax.swing.JFrame {
         this.accounts = currentManagerUsersController.searchAccountsWithKey(
                 searchText, currentPage);
         quantityOfAccounts = currentManagerUsersController.quantityOfAccounts(searchText);
+
         renderTable();
     }
 
     public void renderTable() {
         int quantityPage = quantityPageCalculator(quantityOfAccounts);
         int accountsLength = accounts.size();
-
+       
         if (currentPage > quantityPage) {
-            currentPage = quantityPage - 1;
+            currentPage = quantityPage;
         }
+        
         table.setRowCount(0);
 
         for (int i = 0; i < accountsLength; i++) {

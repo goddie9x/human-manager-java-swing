@@ -85,7 +85,7 @@ public class AccountModel {
 
     public int getAmountAccountsWithCondition(String condition,
             String currentAdminAccountName) {
-        int quantityOfAccounts = 0;
+        int quantityOfAccounts = 1;
         String countAccountsQuery = "SELECT COUNT(*) FROM Accounts where"
                 + "(userName = ? or accountName = ?) and "
                 + " accountName <> '" + currentAdminAccountName + "'";
@@ -111,14 +111,12 @@ public class AccountModel {
 
     public int getAmountAccountsWithCondition(
             String currentAdminAccountName) {
-        int quantityOfAccounts = 0;
-        String countAccountsQuery = "SELECT COUNT(*) FROM Accounts where"
-                + " accountName <> ?";
+        int quantityOfAccounts = 1;
+        String countAccountsQuery = "SELECT COUNT(*) FROM Accounts";
 
         try {
             PreparedStatement statementQueryAllAccounts = DB.prepareStatement(
                     countAccountsQuery);
-            statementQueryAllAccounts.setString(1, currentAdminAccountName);
 
             ResultSet resultSet
                     = statementQueryAllAccounts.executeQuery();

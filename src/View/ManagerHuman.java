@@ -33,6 +33,7 @@ public class ManagerHuman extends javax.swing.JFrame {
                 .loadDataPageEmployees(currentPage);
         quantityOfEmployees
                 = currentManagerHumanController.quantityOfEmployees("");
+
         renderTable();
 
         if (currentAccountRole == 1) {

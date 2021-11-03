@@ -11,7 +11,7 @@ public class ConnectDbSql {
     private static final ConnectDbSql instance = new ConnectDbSql();
     private final String server = "DESKTOP-13CUDEO";
     private final String user = "sa";
-    private final String password = "Stamhm97";
+    private final String password = "không cho pass";
     private final String database = "humanResourceManager";
     private final int port = 1433;
     private final String driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
